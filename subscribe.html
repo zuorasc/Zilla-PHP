@@ -1,0 +1,324 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Subscribe</title>
+<link type="text/css" rel="stylesheet" href="css/style.css">
+<link type="text/css" rel="stylesheet" href="css/karma-teal-grey.css">
+<link href="css/structure.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="js/jquery.js" /></script>
+<script type="text/javascript" src="js/function.js" /></script>
+<script type="text/javascript" src="js/postmessage.js" /></script> 
+<script type="application/javascript" >
+	
+	$.ajaxSetup({
+	    cache: false
+	});
+	
+	$(document).ready(function(){
+		$("#infor").hide();
+		$("#loading").hide();
+		$("#email").blur( checkEmailAvailability );
+		$(".email_avail").hide();
+		$(".email_unavail").hide();
+		$('.subtotal_display').hide();
+		
+		previewCurrentCart();
+		displayNewIframe();
+	});
+	
+	var previewCurrentCart = function(){
+		//Get cart items
+		$.getJSON("backend/index.php?type=GetInitialCart",
+			function(data){
+				refreshCart(data.msg);
+				//Preview subscription with cart items
+				$('.subtotal_display').hide();
+				$.getJSON("backend/index.php?type=PreviewCurrentCart",
+					function(data2){
+						var msg = data2.msg[0];
+						if(!msg.success) {
+							var errorMessage = msg.error;
+							if(msg.error=='EMPTY_CART'){
+								errorMessage = 'WARNING: Please add at least one item to your cart before subscribing.';
+							} else if(msg.error=='RATE_PLAN_DOESNT_EXIST'){
+								errorMessage = 'WARNING: There was an error calculating your total. One or more of your selected items may no longer be in our system. Please remove it before continuing.';
+							} else if(msg.error=='RATE_PLAN_EXPIRED'){
+								errorMessage = 'WARNING: One of your selected items is no longer being offered. Please remove it before continuing.';
+							}
+							alert( errorMessage );
+						} else {
+							$('.subtotal_display').text("First Invoice Total Before Tax: $" +msg.invoiceAmount );
+							$('.subtotal_display').show();
+						}
+					}
+				);
+        	}
+		);
+	}
+	
+	var refreshCart = function(msg){
+		var html = "";
+
+		for(var i in msg[0].cart_items){
+			var citem = msg[0].cart_items[i];
+			html+="<li class='border_bottom_dashed'>";
+            html+="  <div class='rateplan_info'>";
+			html+="    <span class='rateplan_name'>"+citem.ProductName+" : "+citem.ratePlanName+"</span><br>";
+			if(citem.quantity!='null'){
+				html+="    <span class='rateplan_name'>"+citem.uom+": <input type='text' disabled='true' value='" +citem.quantity+ "' /></span><br>";
+			}
+            html+="  </div>";
+            html+="  <div class='clear-block'></div>";
+            html+="</li>";
+		}
+		$(".chosen_plans").html(html);
+
+		$(".btn_remove").click(function(event){
+			removeFromCart(event);
+		});
+	}
+
+	var displayNewIframe = function(){
+		$.getJSON("backend/index.php?type=GetNewIframeSrc",
+			function(data){
+				$("#z_hppm_iframe").attr('src', data.msg[0]);
+        	}
+		);
+	}
+
+	function onsubmit_action() {
+		submitHostedPage('z_hppm_iframe');
+	}
+	
+	function hostedpagecallback_success(ref_id) {
+//		alert(ref_id);
+		createSubscription(ref_id);
+	}
+
+	function createSubscription(ref_id){
+		var uEmail = $('#email').val();
+		$.getJSON("backend/index.php?type=SubscribeWithCurrentCart", {userEmail: uEmail, pmId: ref_id},
+			function(data){
+				console.log(data);
+				if(!data.success) {
+					alert(data.msg[0].msg);
+					displayNewIframe();
+				}
+				else {
+					var result = data.msg[0].result;
+					if(result.Success){
+						window.location.replace('account_view.html');
+					} else {
+						var html = '';
+						html = 'Your order was not submitted for the following reasons:<br><ul>' + html;
+						var error = result['Errors'].Message;
+						if(error=='SubscriptionData.SubscriptionRatePlanData is required') error = 'You must select at least one product.';
+						if(error=='Missing required value: Name') error = 'Please enter your email address.';
+						html += '<li>' + error + '</li>';
+						html += '</ul>';
+						$('.error_message').html(html);
+						$("#infor").show();
+						displayNewIframe();
+					}
+				}
+        	}
+		);
+	}
+
+	function checkEmailAvailability(){
+		var uEmail = $('#email').val();
+		$(".email_avail").hide();
+		$(".email_unavail").hide();
+		if(uEmail.length>0){
+			$.getJSON("backend/index.php?type=CheckEmailAvailability", {uEmail: uEmail},
+				function(data){
+					var avail = data.msg[0];
+					if(avail){
+						$(".email_avail").show();
+					} else {
+						$(".email_unavail").show();	
+					}
+				}
+			);
+		}
+	}
+
+	function hostedpagecallback_failure(errorCode, errorMessage, errorField_creditCardType, errorField_creditCardNumber,
+			errorField_creditCardExpirationMonth, errorField_creditCardExpirationYear, errorField_cardSecurityCode,
+			errorField_creditCardHolderName) {
+
+		var html = '';
+
+		html += formatErrorDisplay(errorCode, '');
+		html += formatErrorDisplay(errorMessage, '');
+		html += formatErrorDisplay(errorField_creditCardType, 'Card Type: ');
+		html += formatErrorDisplay(errorField_creditCardNumber, 'Card Number: ');
+		html += formatErrorDisplay(errorField_creditCardExpirationMonth, 'Card Expiration Month: ');
+		html += formatErrorDisplay(errorField_creditCardExpirationYear, 'Card Expiration Year: ');
+		html += formatErrorDisplay(errorField_cardSecurityCode, 'Card Security Code: ');
+		html += formatErrorDisplay(errorField_creditCardHolderName, 'Card Holder Name: ');
+
+		if(html!=''){
+			html = 'Your order was not submitted for the following reasons.<br><ul>' + html;
+			html += '</ul>';
+		}
+		$('.error_message').html(html);
+
+		$("#infor").show();
+		displayNewIframe();
+	}
+	
+	function formatErrorDisplay(errorField, prefix){
+		var result = '';
+		var displayError = errorField;
+		if(displayError=='NullValue') displayError = "Missing required field.";
+		if(errorField!=null && errorField!=''){
+			result += '<li>' + prefix + displayError + '</li>';
+		}
+		return result;
+	}
+
+
+</script>
+
+<body>
+
+
+
+
+
+
+
+
+
+
+
+<!-- start Header -->
+
+<div id="wrapper">
+<div id="header">
+<div class="header-holder">
+<div class="rays">
+<div class="header-area">
+<a class="logo" href="index.html"><img alt="Zuora Home Page" src="images/logo.png"></a>
+</div><!-- header-area -->
+</div><!-- end rays -->
+</div><!-- end header-holder -->
+</div>
+</div>
+
+
+<!-- end header -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div id="web_main">
+    <div id="main" class="edit_dv">
+        <div id="left-main">
+            <div class="left-main inner">
+                <div class="panel-section">
+                    <div class="title"><h3>Create Account:</h3></div>
+
+                    <div id="infor" class="error_message clear-block"></div>
+                    <label>Email Address:</label>
+                    <span class='must'>
+                        <input type='text' id='email' name='email' />
+                    </span> 
+                    <span class='success_message email_avail'>
+                        Email is Available
+                    </span>
+                    <span class='error_message email_unavail'>
+                        Email is already in use.
+                    </span>
+                    <br>
+                </div>
+                <div class="panel-section">
+                    <div id='card_dv'>
+                        <iframe id="z_hppm_iframe" frameborder="0" name="z_hppm_iframe" width="600" height="550" src=""></iframe>
+                    </div>
+                </div>
+                <a class="btn_submit subscribe_button" href="javascript:" onClick="onsubmit_action();">Subscribe</a>
+            </div>
+        </div>
+        <div id="right-sub">
+            <div class="right-sub inner">
+                <div class="title"><h3>Selected Products</h3></div>
+                <ul class="chosen_plans">
+
+                </ul>
+                <div class="display_field subtotal_display"> <span class="display_field label"></div>
+                <span class='clear-block'></span>
+                <div class="alignRight" style="margin-top: 10px"><a class="btn_submit change_products" href="javascript:" onclick="window.location='select_products.html';">Change Products</a></div>
+            </div>
+        </div>
+    </div>
+    <div class="clear-block"></div>
+</div>
+
+
+
+
+
+<!-- start footer -->
+
+
+<div id="footer">
+<div class="footer-area">
+<div class="footer-wrapper">
+<div class="footer-holder">
+<div class="one_fourth"><h3>News and Events</h3>
+</div><div class="one_fourth"><h3>Our Products</h3><ul class="sub-menu"><li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-5328" id="menu-item-5328"><a href="#/">Personal</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-5326" id="menu-item-5326"><a href="#">Professional</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-5327" id="menu-item-5327"><a href="#">Enterprise</a></li>
+</ul></div><div class="one_fourth">
+<h3>Follow Us</h3>		
+<ul class="social_icons">
+<li><a class="twitter" href="http://twitter.com/#!/zuora">Twitter</a></li>
+</ul>
+</div><div class="one_fourth_last"><h3>Contact Us</h3>
+<div class="textwidget"><p>Zuora</p>
+<p><a target="_blank" href="#">3400 Bridge Parkway<br>
+Suite 101<br>
+Redwood City, CA<br>
+</a></p>
+<p><a href="mailto:info@zuora.com">info@zuora.com </a></p>
+<p>Toll Free: 1-555-555-5555<br>
+Office:1-555-555-5555<br>
+Fax: 1-555-555-5555</p>
+</div>
+</div>
+</div><!-- footer-holder -->
+</div><!-- end footer-wrapper -->
+</div><!-- end footer-area -->
+</div>
+<div id="footer_bottom">
+  <div class="info">
+      <div id="foot_left">&nbsp;
+<div class="textwidget"><p>Copyright &copy; 2012 Zuora All rights reserved.</p>
+</div>
+	</div><!-- end foot_left -->
+<div id="foot_right"><div class="top-footer"></div>
+
+                    
+      </div><!-- end foot_right -->
+  </div><!-- end info -->
+</div>
+
+<!-- end footer -->
+
+
+
+
+
+</body>
+</html>

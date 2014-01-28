@@ -1,0 +1,446 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link type="text/css" rel="stylesheet" href="css/style.css">
+<link type="text/css" rel="stylesheet" href="css/karma-teal-grey.css">
+<link href="css/structure.css" rel="stylesheet" type="text/css"/>
+<title>Change Subscription</title>
+<script type="text/javascript" src="js/jquery.js" /></script>
+<script type="text/javascript" src="js/function.js" /></script>
+<script type="application/javascript" >
+
+	$(document).ready(function(){
+		$("#infor").hide();
+		$("#loading").show('fast');
+		$('.accept-change').hide();
+		$('.upcoming-changes').hide();
+		
+		getCurrentSubscription();
+
+		$.getJSON("backend/index.php?type=ReadCatalog",
+			function(data){
+				if(!data.success) {	addError(data.msg); }
+				else { listProducts(data.msg); }
+        	}
+		);
+	});
+	
+	function isNumberKey(evt){
+		var charCode = (evt.which) ? evt.which : event.keyCode
+		if (charCode > 31 && (charCode < 48 || charCode > 57))
+			return false;
+		return true;
+	}
+	
+	var getCurrentSubscription = function(){
+		$("#loading").show('fast');
+		$.getJSON("backend/index.php?type=GetLatestSubscription",
+			function(data){
+				if(!data.success) {	addError(data.msg); }
+				else { loadPlan(data.msg); }
+        	}
+		);
+		$(".chosen_plans").html("Loading Subscription");
+		$(".amendment_list").html("Loading Subscription");
+	}
+	
+	var loadPlan = function(msg){
+		$("#loading").fadeOut('fast');
+		
+		//Set Email
+		$("#user_email").html("("+msg[0].userEmail+")");
+
+		//Set Current Plans
+		var html = "";
+		for(var i in msg[0].active_plans){
+			var pitem = msg[0].active_plans[i];
+			html+="<li class='border_bottom_dashed'>";
+            html+="  <div class='rateplan_info'>";
+			html+="    <span class='rateplan_name'>"+pitem.ProductName+"<br>"+pitem.Name+"</span><br>";
+            html+="  </div>";
+            html+="  <a href='javascript:' class='btn_submit item_button floatRight btn_remove' id='remove_item_"+pitem.Id+"'>Remove</a><br>";
+            /*
+			if(pitem.uom!=null){
+				html+="  <br>";
+				html+="  <span class='rateplan_name floatLeft'><input type='text' id='update_field_"+pitem.Id+"' value='" +pitem.quantity+ "' /> "+pitem.uom+"s </span><br>";
+	            html+="  <a href='javascript:' class='btn_submit item_button floatRight btn_update' id='update_item_"+pitem.Id+"'>Update</a><br>";
+			}
+			*/
+			html+="  <div class='clear-block'></div>";
+            html+="</li>";
+		}
+		$(".chosen_plans").html(html);
+		$(".btn_remove").click(function(event){
+			removeFromPlan(event);
+		});
+		$(".btn_update").click(function(event){
+			updatePlan(event);
+		});
+
+		//Show Removed Rateplans
+		var html = "";
+		for(var i in msg[0].removed_plans){
+			var aitem = msg[0].removed_plans[i];
+			html+="<div class='removed border_bottom_dashed'>";
+            html+="    <div class='clear-block'></div>";
+            html+="    <div class='rateplan_info'> <span class='rateplan_name'>"+aitem.ProductName+"<br>"+aitem.Name+"</span><br>";
+			if(aitem.uom!=null){
+				html+="    <span class='rateplan_name'>"+aitem.uom+": <input type='text' disabled='true' id='update_field_"+aitem.Id+"' value='" +aitem.quantity+ "' /></span><br>";
+			}
+            if(aitem.AmendmentType=='RemoveProduct')	
+				html+="    <div class='mark'>Expires "+formatZDate(aitem.effectiveDate)+"</div>";
+//            if(aitem.Type=='UpdateProduct')	html+="    <div class='mark'>Reduced<br>"+aitem.oldQuantity+" => "+aitem.newQuantity+"</div>";
+            html+="    </div>";
+//            html+="    <a href='javascript:' id='retract_"+aitem.Id+"'class='btn_submit item_button floatRight'>Retract</a>";
+            html+="    <div class='clear-block'></div>";
+            html+="</div>";
+		}
+		$(".amendment_list").html(html);
+		if(msg[0].removed_plans.length>0){
+			$('.upcoming-changes').show();
+		} else {
+			$('.upcoming-changes').hide();
+		}
+		
+	}
+
+/*
+	var removeFromPlan = function(event){
+		var buttonId = event.target.id;
+		var itemId = buttonId.split('remove_item_')[1];
+		confirm('Remove plan ' + itemId + '?');
+	};
+*/
+	var removeFromPlan = function(event){
+		$('.accept-change').slideUp('fast');
+		var buttonId = event.target.id;
+		var itemId = buttonId.split('remove_item_')[1];
+		
+		$('.accept-amendment').data('rpId', itemId);
+		$.getJSON("backend/index.php?type=PreviewRemoveRatePlan",
+			function(data){
+				if(!data.success) {	addError(data.msg); }
+				else { 
+					var effectiveDate = data.msg[0];
+					var html = '';
+					html += 'Are you sure you would like to remove this product?<br><br>';
+					if(effectiveDate != null){
+						html += 'This change will be effective at the end of your current term:<br><br><b>' +effectiveDate.substring(0,10)+ '</b>';
+					}
+					$('.accept-amendment').show();
+					$('.cancel-amendment').show();
+					$('.amendment-detail').html(html);
+					$('.accept-amendment').click(function(){
+						$('.accept-amendment').unbind('click');
+						var itemId = $('.accept-amendment').data('rpId');
+						$('.accept-amendment').hide();
+						$('.cancel-amendment').hide();
+						$('.amendment-detail').html('Please Wait');
+						$.getJSON("backend/index.php?type=RemoveRatePlan", {itemId:itemId},
+							function(data){
+								$('.accept-change').slideUp('fast');	
+								if(!data.success) {	addError(data.msg); }
+								else {
+									getCurrentSubscription();
+								}
+							}
+						);
+						
+					});
+					$('.cancel-amendment').click(function(){
+						$('.accept-change').slideUp('fast');						
+					});
+					
+					$('.accept-change').slideDown('fast');
+				}
+        	}
+		);
+	};
+	
+
+	var addToPlan = function(event){
+		$('.accept-change').slideUp('fast');
+		var buttonId = event.target.id;
+		var itemId = buttonId.split('add_item_')[1];
+		var itemQty = null;
+		var field = $('#qty_'+itemId);
+		if(field.length){
+			itemQty = field.val();
+		}
+		
+		$('.accept-amendment').data('rpId', itemId);
+		$('.accept-amendment').data('qty', itemQty);
+		
+		$.getJSON("backend/index.php?type=PreviewAddRatePlan", {itemId:itemId, itemQty:itemQty},
+			function(data){
+				if(!data.success) {	alert(data.msg[0].msg); }
+				else { 
+					var total;
+					if(data.msg[0].results.InvoiceDatas!=undefined){
+						total = data.msg[0].results.InvoiceDatas.Invoice.Amount;
+					} else {
+						total = null;
+					}
+					var html = '';
+					html += 'Are you sure you would like to add this product?<br><br>';
+					if(total != null){
+						html += 'Your account will be charged an additional <b>$'+total+'</b> effective immediately.';
+					}
+					$('.accept-amendment').show();
+					$('.cancel-amendment').show();
+					$('.amendment-detail').html(html);
+					$('.accept-amendment').click(function(){
+						$('.accept-amendment').unbind('click');
+						var itemId = $('.accept-amendment').data('rpId');
+						var itemQty = $('.accept-amendment').data('qty');
+						$('.amendment-detail').html('Please Wait');
+						$('.accept-amendment').hide();
+						$('.cancel-amendment').hide();
+						$.getJSON("backend/index.php?type=AddRatePlan", {itemId:itemId, itemQty:itemQty},
+							function(data){
+								if(!data.success) {	alert(data.msg[0].msg); }
+								else { 
+									$('.accept-change').slideUp('fast');
+									getCurrentSubscription();
+								}
+							}
+						);
+						
+					});
+					$('.cancel-amendment').click(function(){
+						$('.accept-change').slideUp('fast');						
+					});
+					
+					$('.accept-change').slideDown('fast');
+				}
+        	}
+		);
+	};
+
+	var updatePlan = function(event){
+		$('.accept-change').slideUp('fast');
+		var buttonId = event.target.id;
+		var itemId = buttonId.split('update_item_')[1];
+		var itemQty = $('#update_field_'+itemId).val();
+		
+		$('.accept-amendment').data('rpId', itemId);
+		$('.accept-amendment').data('qty', itemQty);
+		
+		$.getJSON("backend/index.php?type=PreviewUpdateRatePlan", {itemId:itemId, itemQty:itemQty},
+			function(data){
+				var updRes = data.msg[0];
+				console.log(updRes);
+				var html = '';
+				var itemId = $('.accept-amendment').data('rpId');
+				var itemQty = $('.accept-amendment').data('qty');
+				html += 'Are you sure you want to '+updRes.type+' the number of <b>'+updRes.uom+'s</b> for <b>' +updRes.productName + ' : ' + updRes.ratePlanName + '</b> from <b>'+ updRes.oldQty +'</b> to <b>' + updRes.newQty + '</b>?<br><br>';
+				if(updRes.deltaPrice != null){
+					html += 'Your account will be charged an additional <b>$'+updRes.deltaPrice+'</b> effective immediately.';
+				}
+				$('.accept-amendment').show();
+				$('.cancel-amendment').show();
+				$('.amendment-detail').html(html);
+				$('.accept-amendment').click(function(){
+					$('.accept-amendment').unbind('click');
+					var itemId = $('.accept-amendment').data('rpId');
+					var itemQty = $('.accept-amendment').data('qty');
+					$('.amendment-detail').html('Please Wait');
+					$('.accept-amendment').hide();
+					$('.cancel-amendment').hide();
+					$.getJSON("backend/index.php?type=UpdateRatePlan", {itemId:itemId, itemQty:itemQty},
+						function(data){
+							if(!data.success) {	alert(data.msg[0].msg); }
+							else { 
+								$('.accept-change').slideUp('fast');
+								getCurrentSubscription();
+							}
+						}
+					);
+					
+				});
+				$('.cancel-amendment').click(function(){
+					$('.accept-change').slideUp('fast');						
+				});
+				
+				$('.accept-change').slideDown('fast');
+        	}
+		);
+		
+	};
+
+	var listProducts = function(data){
+		$("#loading").fadeOut('fast');
+
+		var html = "";
+		for(var pgroupKey in data){
+			var pgroup = data[pgroupKey];
+			html += "<div class='panel-section'>";
+			html += " <h4 style='margin:15px 0 5px 0'>"+pgroup.Name+"</h4>";
+			html += " <ul class='list_dv'>";
+			var products = pgroup.products;
+			for(var prodKey in products){
+				var prod = products[prodKey];
+				html += "<li> <span class='clear-block'></span>";
+				html += "    <div class='product'>";
+				html += "     <div class='c1'>";
+				html += "      <span class='product_name'>"+prod.Name+"</span><br>";
+				html += "      <span class='product_description'>"+prod.Description+"</span> ";
+				html += "     </div>";
+				html += "     <ul class='plan_list'>";
+				for(var rpKey in prod.ratePlans){
+					var rp = prod.ratePlans[rpKey];
+					html += "        <li class='border_bottom_dashed'><span class='clear-block'></span>";
+					html += "          <div class='rateplan_info' >";
+					html += "           <span class='rateplan_name'>"+rp.Name+"</span><br>";
+					html += "          	<span class='rateplan_description'>"+rp.Description+"</span> ";
+					if(rp.quantifiable)
+						html += "		<br># "+ rp.Uom +": <input type='text' class='w80' id='qty_"+rp.Id+"' value='1' onkeypress='return isNumberKey(event)' />";
+					html += "          </div>";
+					html += "          <div class='item_button_block'>";
+					html += "           <a href='javascript:' class='btn_submit item_button btn_add' id='add_item_"+rp.Id+"' >Add</a>";
+					html += "          </div>";
+					html += "          <div class='clear-block'></div>";
+					html += "        </li>";
+				}
+				html += "        </ul>";
+				html += "       </div>";
+				html += "      </li>";
+			}
+			html += "    </ul>";
+			html += "  </div>";
+		}
+
+		$(".left-main.inner").append(html);
+		$(".btn_add").click(function(event){
+			addToPlan(event);
+		});
+	};
+</script>
+<body>
+
+
+
+
+
+
+
+<!-- start Header -->
+
+<div id="wrapper">
+<div id="header">
+<div class="header-holder">
+<div class="rays">
+<div class="header-area">
+<a class="logo" href="index.html"><img alt="Zuora Home Page" src="images/logo.png"></a>
+<a class="btn_submit item_button floatRight" href="account_view.html">Return to Account Detail</a>
+</div><!-- header-area -->
+</div><!-- end rays -->
+</div><!-- end header-holder -->
+</div>
+</div>
+
+
+<!-- end header -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div id="web_main">
+  <div id="main" class="edit_dv">
+    <div id="left-main">
+      <div class="left-main inner">
+        <div class="title">
+          <h3>Select Products</h3>
+        </div>
+      </div>
+    </div>
+    <div id="right-sub">
+      <div class="right-sub inner current-subscription">
+        <div class="title">
+          <h3>Current Subscription</h3>
+          <span id="user_email"></span>
+        </div>
+        <ul class="chosen_plans">
+        </ul>
+      </div>
+      <div class="right-sub inner upcoming-changes">
+        <ul class="amendment_list">
+        </ul>
+      </div>
+      <div class="right-sub inner accept-change">
+        <h3>Accept Change</h3>
+        <span class='amendment-detail'>Please wait.</span>
+        <br />
+        <br />
+        <a href="javascript:" class="btn_submit item_button accept-amendment" >Accept</a> 
+        <a href="javascript:" class="btn_submit item_button cancel-amendment" >Cancel</a> </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+<!-- start footer -->
+
+
+<div id="footer">
+<div class="footer-area">
+<div class="footer-wrapper">
+<div class="footer-holder">
+<div class="one_fourth"><h3>News and Events</h3>
+</div><div class="one_fourth"><h3>Our Products</h3><ul class="sub-menu"><li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-5328" id="menu-item-5328"><a href="#/">Personal</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-5326" id="menu-item-5326"><a href="#">Professional</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-5327" id="menu-item-5327"><a href="#">Enterprise</a></li>
+</ul></div><div class="one_fourth">
+<h3>Follow Us</h3>		
+<ul class="social_icons">
+<li><a class="twitter" href="http://twitter.com/#!/zuora">Twitter</a></li>
+</ul>
+</div><div class="one_fourth_last"><h3>Contact Us</h3>
+<div class="textwidget"><p>Zuora</p>
+<p><a target="_blank" href="#">3400 Bridge Parkway<br>
+Suite 101<br>
+Redwood City, CA<br>
+</a></p>
+<p><a href="mailto:info@zuora.com">info@zuora.com </a></p>
+<p>Toll Free: 1-555-555-5555<br>
+Office:1-555-555-5555<br>
+Fax: 1-555-555-5555</p>
+</div>
+</div>
+</div><!-- footer-holder -->
+</div><!-- end footer-wrapper -->
+</div><!-- end footer-area -->
+</div>
+<div id="footer_bottom">
+  <div class="info">
+      <div id="foot_left">&nbsp;
+<div class="textwidget"><p>Copyright &copy; 2012 Zuora All rights reserved.</p>
+</div>
+	</div><!-- end foot_left -->
+<div id="foot_right"><div class="top-footer"></div>
+
+                    
+      </div><!-- end foot_right -->
+  </div><!-- end info -->
+</div>
+
+<!-- end footer -->
+
+
+
+
+
+</body>
+</html>

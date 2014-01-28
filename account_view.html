@@ -1,0 +1,688 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<title>Account Detail</title>
+<link type="text/css" rel="stylesheet" href="css/style.css">
+<link type="text/css" rel="stylesheet" href="css/karma-teal-grey.css">
+<link href="css/structure.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="js/jquery.js" /></script>
+<script type="text/javascript" src="js/function.js" /></script>
+<script type="text/javascript" src="js/postmessage.js" /></script> 
+<script type="application/javascript" >
+
+	$.ajaxSetup({
+	    cache: false
+	});
+
+	$(document).ready(function(){
+		
+		$.getJSON("backend/index.php?type=IsUserLoggedIn",
+			function(data){
+				if(!data.success) {	
+					if(data.msg[0].msg=='SESSION_NOT_SET'){
+						window.location.replace('login.html');
+					}
+				}
+        	}
+		);
+		
+		$('.add_pm').hide();
+		$('.update_contact').hide();
+		$('.change_plan').hide();
+		$('.save_changes').hide();
+		$('.success_message').hide();
+		$('.error_message').hide();
+		$('.add_payment_method_panel').hide();
+		
+		$(".update_contact").click(function(event){
+			inputContactDetail(event);
+		});
+		$(".save_changes").click(function(event){
+			saveContactChange(event);
+		});
+		
+		validateLoggedInEmail();
+	});
+
+	//Send a request to validate that the email address exists. Upon a successful result, send requests to load all account summaries.
+	function validateLoggedInEmail(){
+		//When successful		
+		loadAccountSummaries();
+	}
+
+	function loadAccountSummaries(){
+		getAccountSummary();
+		getSubscriptionSummary();
+	}
+
+
+	function getAccountSummary(){
+		$('.account-summary-table').hide();
+		$('.account-summary .loading').show();
+		$('.contact-summary-table-input').hide();
+		$('.contact-summary-table-output').hide();
+		$('.contact-summary .loading').show();
+
+		$.getJSON("backend/index.php?type=GetCompleteSummary",
+			function(data){
+				if(data.msg[0].msg=='USER_DOESNT_EXIST'){
+					window.location.replace('login.html');
+					return;
+				}
+				if(data.msg[0].msg=='INVALID_ZLOGIN'){
+					alert('There is an error with the server. Please try again later.');
+					window.location.replace('login.html');
+					return;
+				}
+				var acc = data.msg[0];
+				//Show Account Info
+				$('.account_name').html(acc.Name);
+				$('.last_payment_amount').html((acc.LastPaymentAmount!=null ? '$'+acc.LastPaymentAmount : 'N/A'));
+				$('.account_balance').html('$'+acc.Balance);
+				$('.last_payment_date').html((acc.LastPaymentDate!=null ? formatZDate(acc.LastPaymentDate) : 'N/A'));
+				$('.last_invoice_date').html((acc.LastInvoiceDate!=null ? formatZDate(acc.LastInvoiceDate) : 'N/A'));
+				$('.account-summary .loading').hide();
+				$('.account-summary-table').fadeIn('fast');				
+				$('.view_last_pdf').click(viewLastPdf);
+				
+				//Show Contact Info
+				var con = data.msg[0].contactSummary;
+				//Set input and output fields to User Contacts
+				$('.contact-summary-table-output .first_name').text(con.FirstName);
+				$('.contact-summary-table-input .first_name:text').val(con.FirstName);
+				$('.contact-summary-table-output .mailing_state').text(con.State);
+				$('.contact-summary-table-input .mailing_state:text').val(con.State);
+				$('.contact-summary-table-output .last_name').text(con.LastName);
+				$('.contact-summary-table-input .last_name:text').val(con.LastName);
+				$('.contact-summary-table-output .mailing_code').text(con.PostalCode);
+				$('.contact-summary-table-input .mailing_code:text').val(con.PostalCode);
+				$('.contact-summary-table-output .mailing_address').text(con.Address1);
+				$('.contact-summary-table-input .mailing_address:text').val(con.Address1);
+				$('.contact-summary-table-output .mailing_country').text(con.Country);
+				$('.contact-summary-table-input .mailing_country:text').val(con.Country);
+				$('.contact-summary-table-output .mailing_city').text(con.City);
+				$('.contact-summary-table-input .mailing_city:text').val(con.City);
+				$('.update_contact').show();
+				$('.save_changes').hide();
+				$('.contact-summary .loading').hide();
+				$('.contact-summary-table-output').fadeIn('fast');
+				$('#greeting').text("Welcome, " + con.FirstName);
+				
+				//Show PaymentMethod Info
+				var html = "";
+				var ps = data.msg[0].paymentMethodSummaries;
+				//For each payment method, print out
+				for(var i = 0; i < ps.length; i++){
+					var pm = ps[i];
+					html+="    <tr class='border_bottom_dashed'>";
+					html+="        <td width='15%' class='vaTop'><b>"+pm.CardType+"</b></td>";
+					html+="        <td width='35%'>";
+					html+="            <span class='card_holder_name'>"+pm.CardHolderName+"</span><br />";
+					html+="            <span class='card_masked_number'>"+pm.MaskedNumber+"</span><br>";
+					html+="            Exp: <span class='card_expiration_month'>"+pm.ExpirationMonth+"</span>/<span class='card_expiration_year'>"+pm.ExpirationYear+"</span><br>";
+					html+="        </td>";
+					if(pm.isDefault==false){
+						html+="        <td width='50%' class='vaTop'><a href='javascript:' id='pm_update_"+pm.Id+"' class='btn_submit item_button btn_make_default'>Make Default</a>";
+						html+="        <a href='javascript:' id='pm_remove_"+pm.Id+"' class='btn_submit item_button btn_remove_pm'>Remove Card</a></td>";
+					} else {
+						html+="        <td width='50%' class='vaTop'><b>[Default]</b></td>";			
+					}
+					html+="    </tr>";
+				}
+				$('.paymentmethod-summary-table').html(html);
+				$(".btn_make_default").click(function(event){
+					changeDefaultPm(event);
+				});
+				$(".btn_remove_pm").click(function(event){
+					removePm(event);
+				});
+				$('.add_pm').show();
+				$('.add_pm').click(showNewPaymentMethodPanel);
+				$('.paymentmethod-summary .loading').hide();
+				$('.paymentmethod-summary-table').fadeIn('fast');
+				
+			}
+		);
+	}
+	
+	//Display Subscription Summary panel
+	var getSubscriptionSummary = function(){
+		$('.subscription-summary-table').hide();
+		$('.subscription-summary .loading').show();
+
+		$.getJSON("backend/index.php?type=GetLatestSubscription",
+			function(data){
+				var subs = data.msg[0];
+				
+				//Display Start Date of Subscription
+				$('.subscription_start_date').html(formatZDate(subs.startDate));
+				
+				//Display active plans
+				var html = "";
+				for(var i in subs.active_plans){
+					var rp = subs.active_plans[i];
+					html += "<li class='border_bottom_dashed'>";
+                    html += "   <div class='rateplan_info'>";
+                    html += "       <span class='rateplan_name'>"+rp.ProductName+" : "+rp.Name+"</span><br>";
+                    html += "       <ul class='price_item_list' >";
+                    html += "           <li class='price_item'><span class='price_item'>"+rp.Description+"</span></li>";
+                    html += "       </ul>";
+					html += "   </div>";
+					html += "   <div class='clear-block'></div>";
+					html += "</li>";
+				}
+				$('.chosen_plans').html(html);
+
+				//Display removed plans
+				html = "";
+				for(var i in subs.removed_plans){
+					var rp = subs.removed_plans[i];
+					html += "<li class='border_bottom_dashed'>";
+                    html += "   <div class='rateplan_info'>";
+                    html += "       <span class='rateplan_name'>"+rp.ProductName+" : "+rp.Name+"</span><br>";
+                    if(rp.AmendmentType=='RemoveProduct'){
+						html+="    <div class='mark'>Expires "+formatZDate(rp.effectiveDate)+"</div><br>";	
+					}
+                    html += "       <ul class='price_item_list' style='margin-left: 0;margin-top: 6px;'>";
+                    html += "           <li class='price_item'><span class='price_item'>"+rp.Description+"</span></li>";
+                    html += "       </ul>";
+					html += "   </div>";
+					html += "   <div class='clear-block'></div>";
+					html += "</li>";
+				}
+				$('.removed_plans').html(html);
+
+				$('.change_plan').show();
+				$('.subscription-summary .loading').hide();
+				$('.subscription-summary-table').fadeIn('fast');
+        	}
+		);
+	}
+
+	function getContactSummary(){
+		$('.contact-summary-table-input').hide();
+		$('.contact-summary-table-output').hide();
+		$('.contact-summary .loading').show();
+		$.getJSON("backend/index.php?type=GetContactSummary",
+			function(data){
+				var con = data.msg[0];
+				//Set input and output fields to User Contacts
+				$('.contact-summary-table-output .first_name').text(con.FirstName);
+				$('.contact-summary-table-input .first_name:text').val(con.FirstName);
+				$('.contact-summary-table-output .mailing_state').text(con.State);
+				$('.contact-summary-table-input .mailing_state:text').val(con.State);
+				$('.contact-summary-table-output .last_name').text(con.LastName);
+				$('.contact-summary-table-input .last_name:text').val(con.LastName);
+				$('.contact-summary-table-output .mailing_code').text(con.PostalCode);
+				$('.contact-summary-table-input .mailing_code:text').val(con.PostalCode);
+				$('.contact-summary-table-output .mailing_address').text(con.Address1);
+				$('.contact-summary-table-input .mailing_address:text').val(con.Address1);
+				$('.contact-summary-table-output .mailing_country').text(con.Country);
+				$('.contact-summary-table-input .mailing_country:text').val(con.Country);
+				$('.contact-summary-table-output .mailing_city').text(con.City);
+				$('.contact-summary-table-input .mailing_city:text').val(con.City);
+				$('#greeting').text("Welcome, " + con.FirstName);
+				
+				$('.update_contact').show();
+				$('.save_changes').hide();
+
+				$('.contact-summary-table-output').fadeIn('fast');
+				
+				$('.contact-summary .loading').hide();
+				$('.contact-summary-table-output').fadeIn('fast');
+			}
+		);
+	}
+	
+	function viewLastPdf(){
+		window.open('backend/getLastPdf.php');
+	}
+
+	//When the user clicks the Update Contact Info button, hide the contact output table, and display the contact input table.
+	function inputContactDetail(event){
+		$('.success_message').hide();
+		$('.error_message').hide();
+
+		$('.contact-summary-table-output').hide();
+		$('.contact-summary-table-input').show();
+
+		$('.update_contact').hide();
+		$('.save_changes').show();
+	};
+	
+	//When the user clicks the Save Changes button on the contact panel, update the Contact record with the user's preferences and return a message.
+	function saveContactChange(){
+		$('.contact-summary-table-output').show();
+		$('.contact-summary-table-input').hide();
+		
+		//Update Contact
+		var first_name = $('.first_name:text').val();
+		var mailing_state = $('.mailing_state:text').val();
+		var last_name = $('.last_name:text').val();
+		var mailing_code = $('.mailing_code:text').val();
+		var mailing_address = $('.mailing_address:text').val();
+		var mailing_country = $('.mailing_country:text').val();
+		var mailing_city = $('.mailing_city:text').val();
+		$.getJSON("backend/index.php?type=UpdateContact", {firstName:first_name, lastName:last_name, address:mailing_address, city:mailing_city, state:mailing_state, postalCode:mailing_code, country:mailing_country},
+			function(data){
+				//Get back success result
+				var success = data.msg[0].Success;
+				if(success){
+					//If true, show success message, re-render panel
+					$('.success_message').text('Contact successfully saved!');
+					$('.success_message').show();
+					
+					//Set output fields to the same value as the input fields
+					$('.contact-summary-table-output .first_name').text($('.contact-summary-table-input .first_name:text').val());
+					$('.contact-summary-table-output .mailing_state').text($('.contact-summary-table-input .mailing_state:text').val());
+					$('.contact-summary-table-output .last_name').text($('.contact-summary-table-input .last_name:text').val());
+					$('.contact-summary-table-output .mailing_code').text($('.contact-summary-table-input .mailing_code:text').val());
+					$('.contact-summary-table-output .mailing_address').text($('.contact-summary-table-input .mailing_address:text').val());
+					$('.contact-summary-table-output .mailing_country').text($('.contact-summary-table-input .mailing_country:text').val());
+					$('.contact-summary-table-output .mailing_city').text($('.contact-summary-table-input .mailing_city:text').val());
+									
+				} else {
+					//If false, show failure message, don't rerender panel
+					var errors = data.msg[0].Errors;
+					var error_output = "";
+					for(var ei in errors){
+						var error = errors[ei];
+						error_output += error.Message + "\n";
+					}
+					$('.error_message').text(error_output);					
+					$('.error_message').show();					
+				}
+        	}
+		);
+		
+		$('.update_contact').show();
+		$('.save_changes').hide();
+	}
+	
+
+	function getPaymentMethodSummary(){
+		$('.paymentmethod-summary-table').hide();
+		$('.paymentmethod-summary .loading').show();
+		$.getJSON("backend/index.php?type=GetPaymentMethodSummary",
+			function(data){
+                var html = "";
+				var ps = data.msg;
+				//For each payment method, print out
+				for(var i = 0; i < ps.length; i++){
+					var pm = ps[i];
+					html+="    <tr class='border_bottom_dashed'>";
+					html+="        <td width='15%' class='vaTop'><b>"+pm.CardType+"</b></td>";
+					html+="        <td width='35%'>";
+					html+="            <span class='card_holder_name'>"+pm.CardHolderName+"</span><br />";
+					html+="            <span class='card_masked_number'>"+pm.MaskedNumber+"</span><br>";
+					html+="            Exp: <span class='card_expiration_month'>"+pm.ExpirationMonth+"</span>/<span class='card_expiration_year'>"+pm.ExpirationYear+"</span><br>";
+					html+="        </td>";
+					if(pm.isDefault==false){
+						html+="        <td width='50%' class='vaTop'><a href='javascript:' id='pm_update_"+pm.Id+"' class='btn_submit item_button btn_make_default'>Make Default</a>";
+						html+="        <a href='javascript:' id='pm_remove_"+pm.Id+"' class='btn_submit item_button btn_remove_pm'>Remove Card</a></td>";
+					} else {
+						html+="        <td width='50%' class='vaTop'><b>[Default]</b></td>";			
+					}
+					html+="    </tr>";
+				}
+				$('.paymentmethod-summary-table').html(html);
+								
+				$(".btn_make_default").click(function(event){
+					changeDefaultPm(event);
+				});
+	
+				$(".btn_remove_pm").click(function(event){
+					removePm(event);
+				});
+
+				$('.add_pm').show();
+				$('.add_pm').click(showNewPaymentMethodPanel);
+				
+				$('.paymentmethod-summary .loading').hide();
+				$('.paymentmethod-summary-table').fadeIn('fast');
+			}
+		);
+	}
+	
+	function changeDefaultPm(event){
+		var buttonId = event.target.id;
+		var pmId = buttonId.split('pm_update_')[1];
+
+		$.getJSON("backend/index.php?type=UpdatePaymentMethod", {pmId:pmId},
+			function(data){
+				getPaymentMethodSummary();
+        	} 
+		);
+	};
+	
+	function removePm(event){
+		var buttonId = event.target.id;
+		var pmId = buttonId.split('pm_remove_')[1];
+
+		$.getJSON("backend/index.php?type=RemovePaymentMethod", {pmId:pmId},
+			function(data){
+				getPaymentMethodSummary();
+        	} 
+		);
+	};
+	
+	function showNewPaymentMethodPanel(){
+		$.getJSON("backend/index.php?type=GetExistingIframeSrc",
+			function(data){
+				$("#z_hppm_iframe").attr('src', data.msg[0]);
+				$('.add_payment_method_panel').show();
+				$('.new_pm').click(submitNewPaymentMethod);
+				$('.cancel_pm').click(cancelNewPaymentMethod);
+        	}
+		);
+	}
+	
+	function submitNewPaymentMethod(){
+		submitHostedPage('z_hppm_iframe');
+	}
+
+	function cancelNewPaymentMethod(){
+		hideNewPaymentMethodPanel();
+	}
+	
+	function hideNewPaymentMethodPanel(){
+		$("#infor.error_message").hide();
+		$('.add_payment_method_panel').slideUp('fast');
+		$('.new_pm').unbind('click');
+		$('.cancel_pm').unbind('click');
+		$("#z_hppm_iframe").attr('src', '');
+		
+	}
+
+	function hostedpagecallback_success(ref_id) {
+		submitNewPaymentMethod();
+		getPaymentMethodSummary();
+		hideNewPaymentMethodPanel();
+	}
+
+	function hostedpagecallback_failure(errorCode, errorMessage, errorField_creditCardType, errorField_creditCardNumber,
+			errorField_creditCardExpirationMonth, errorField_creditCardExpirationYear, errorField_cardSecurityCode,
+			errorField_creditCardHolderName) {
+
+		var html = '';
+
+		html += formatErrorDisplay(errorCode, '');
+		html += formatErrorDisplay(errorMessage, '');
+		html += formatErrorDisplay(errorField_creditCardType, 'Card Type: ');
+		html += formatErrorDisplay(errorField_creditCardNumber, 'Card Number: ');
+		html += formatErrorDisplay(errorField_creditCardExpirationMonth, 'Card Expiration Month: ');
+		html += formatErrorDisplay(errorField_creditCardExpirationYear, 'Card Expiration Year: ');
+		html += formatErrorDisplay(errorField_cardSecurityCode, 'Card Security Code: ');
+		html += formatErrorDisplay(errorField_creditCardHolderName, 'Card Holder Name: ');
+
+		if(html!=''){
+			html = 'Your credit card info was not saved for the following reasons.<br><ul>' + html;
+			html += '</ul>';
+		}
+		$('#infor.error_message').html(html);
+
+		$("#infor.error_message").show();
+		showNewPaymentMethodPanel()
+	}
+	
+	function formatErrorDisplay(errorField, prefix){
+		var result = '';
+		var displayError = errorField;
+		if(displayError=='NullValue') displayError = "Missing required field.";
+		if(errorField!=null && errorField!=''){
+			result += '<li>' + prefix + displayError + '</li>';
+		}
+		return result;
+	}
+
+	
+</script>
+
+<body>
+
+
+
+
+
+
+<!-- start Header -->
+
+<div id="wrapper">
+<div id="header">
+<div class="header-holder">
+<div class="rays">
+<div class="header-area">
+<a class="logo" href="index.html"><img alt="Zuora Home Page" src="images/logo.png"></a>
+<div class="floatRight" id="greeting"></div><br><br>
+<a class="btn_submit item_button floatRight" href="backend/logout.php">Log Out</a>
+</div><!-- header-area -->
+</div><!-- end rays -->
+</div><!-- end header-holder -->
+</div>
+</div>
+
+
+<!-- end header -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div id="web_main">
+    <div id="main" class="edit_dv">    
+        <noscript>
+            <div class="error_message"> Javascript must be enabled to use this page. </div>
+        </noscript>
+        
+        <div class="titleBox">
+            <h3>Account Summary:</h3>
+            
+            <div class="summary-box account-summary">
+			
+	            <div class="loading"> loading... </div>
+                <table class='account-summary-table'>
+                    <tr>
+                        <td width="15%">Account Name:</td>
+                        <td width="35%"><b><span class='account_name'></span></b></td>
+                        <td width="15%">Last Payment:</td>
+                        <td width="35%"><b><span class='last_payment_amount'></span></b></td>
+                    </tr>
+                    <tr>
+                        <td>Account Balance:</td>
+                        <td><b><span class='account_balance'></span></b></td>
+                        <td>Last Payment Date:</td>
+                        <td><b><span class='last_payment_date'></span></b></td>
+                    </tr>
+                    <tr>
+                        <td>Last Invoice:</td>
+                        <td><b><span class='last_invoice_date'></span></b></td>
+                        <td colspan='2'><a href="javascript:" class="btn_submit item_button view_last_pdf" style="margin-top: 5px">View Latest Invoice as PDF</a></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="titleBox">
+            <a href="javascript:" class="btn_submit item_button add_pm floatRight" style="margin-top: 8px;margin-right: 8px;">New Payment Method</a>
+            <h3>Payment Methods:</h3>
+
+            <div class="summary-box paymentmethod-summary">
+              <div class="loading"> loading... </div>
+                <table class='paymentmethod-summary-table'>
+                </table>
+              </div>
+            <div class="innerBlock add_payment_method_panel">
+                <h4>New Credit Card</h4>
+                <div id="infor" class="error_message clear-block"></div>
+                <iframe id="z_hppm_iframe" frameborder="0" name="z_hppm_iframe" width="600" height="460" src="" ></iframe>
+                <br>
+                <a href="javascript:" class="btn_submit item_button new_pm" >Add</a>
+                <a href="javascript:" class="btn_submit item_button cancel_pm" >Cancel</a>
+            </div>
+        </div>
+
+        <div class="titleBox">
+            <a href="javascript:" class="btn_submit item_button update_contact floatRight" style="margin-top: 8px;margin-right: 8px;">Update Contact Info</a>
+            <a href="javascript:" class="btn_submit item_button save_changes floatRight" style="margin-top: 8px;margin-right: 8px;">Save Changes</a>
+
+            <h3>Contact Info:</h3>
+            <div class="success_message"></div>
+            <div class="error_message"></div>
+
+            <div class="summary-box contact-summary">
+			
+	            <div class="loading"> loading... </div>
+                
+                <table class='contact-summary-table-output'>
+                    <tr>
+                        <td width="15%">First Name:</td>
+                        <td width="35%"><b><span class='first_name'></span></b></td>
+                        <td width="15%">State:</td>
+                        <td width="35%"><b><span class='mailing_state'></span></b></td>
+                    </tr>
+                    <tr>
+                        <td width="15%">Last Name:</td>
+                        <td width="35%"><b><span class='last_name'></span></b></td>
+                        <td width="15%">Postal Code:</td>
+                        <td width="35%"><b><span class='mailing_code'></span></b></td>
+                    </tr>
+                    <tr>
+                        <td width="15%">Address:</td>
+                        <td width="35%"><b><span class='mailing_address'></span></b></td>
+                        <td width="15%">Country:</td>
+                        <td width="35%"><b><span class='mailing_country'></span></b></td>
+                    </tr>
+                    <tr>
+                        <td width="15%">City:</td>
+                        <td width="35%"><b><span class='mailing_city'></span></b></td>
+                        <td width="15%"></td>
+                        <td width="35%"><b></b></td>
+                    </tr>
+                </table>
+
+                <table class='contact-summary-table-input'>
+                    <tr>
+                        <td width="15%">First Name:</td>
+                        <td width="35%"><input type="text" class="first_name" value="" /></td>
+                        <td width="15%">State:</td>
+                        <td width="35%"><input type="text" class="mailing_state" value="" /></td>
+                    </tr>
+                    <tr>
+                        <td width="15%">Last Name:</td>
+                        <td width="35%"><input type="text" class="last_name" value="" /></td>
+                        <td width="15%">Postal Code:</td>
+                        <td width="35%"><input type="text" class="mailing_code" value="" /></td>
+                    </tr>
+                    <tr>
+                        <td width="15%">Address:</td>
+                        <td width="35%"><input type="text" class="mailing_address" value="" /></td>
+                        <td width="15%">Country:</td>
+                        <td width="35%"><input type="text" class="mailing_country" value="" /></td>
+                    </tr>
+                    <tr>
+                        <td width="15%">City:</td>
+                        <td width="35%"><input type="text" class="mailing_city" value="" /></td>
+                        <td width="15%"></td>
+                        <td width="35%"><b></b></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="titleBox">
+            <a href="amend.html" class="btn_submit item_button change_plan floatRight" style="margin-top: 8px;margin-right: 8px;">Change Plan</a>
+            <h3>Subscription Information:</h3>
+
+            <div class="summary-box subscription-summary">
+
+              <div class="loading"> loading... </div>
+
+			  <div class='subscription-summary-table'>
+                  <table>
+                        <tr>
+                            <td width="15%">Subscription Start Date:</td>
+                            <td width="35%"><b><span class='subscription_start_date'></span></b></td>
+                            <td width="15%"></td>
+                            <td width="35%"></td>
+                        </tr>
+                    </table>
+    
+                    <div class="innerBlock">
+                        <ul class="chosen_plans">
+                        </ul>
+                        <ul class="removed_plans">
+                        </ul>
+                   </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+</div>
+
+
+
+
+
+<!-- start footer -->
+
+
+<div id="footer">
+<div class="footer-area">
+<div class="footer-wrapper">
+<div class="footer-holder">
+<div class="one_fourth"><h3>News and Events</h3>
+</div><div class="one_fourth"><h3>Our Products</h3><ul class="sub-menu"><li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-5328" id="menu-item-5328"><a href="#/">Personal</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-5326" id="menu-item-5326"><a href="#">Professional</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-5327" id="menu-item-5327"><a href="#">Enterprise</a></li>
+</ul></div><div class="one_fourth">
+<h3>Follow Us</h3>		
+<ul class="social_icons">
+<li><a class="twitter" href="http://twitter.com/#!/zuora">Twitter</a></li>
+</ul>
+</div><div class="one_fourth_last"><h3>Contact Us</h3>
+<div class="textwidget"><p>Zuora</p>
+<p><a target="_blank" href="#">3400 Bridge Parkway<br>
+Suite 101<br>
+Redwood City, CA<br>
+</a></p>
+<p><a href="mailto:info@zuora.com">info@zuora.com </a></p>
+<p>Toll Free: 1-555-555-5555<br>
+Office:1-555-555-5555<br>
+Fax: 1-555-555-5555</p>
+</div>
+</div>
+</div><!-- footer-holder -->
+</div><!-- end footer-wrapper -->
+</div><!-- end footer-area -->
+</div>
+<div id="footer_bottom">
+  <div class="info">
+      <div id="foot_left">&nbsp;
+<div class="textwidget"><p>Copyright &copy; 2012 Zuora All rights reserved.</p>
+</div>
+	</div><!-- end foot_left -->
+<div id="foot_right"><div class="top-footer"></div>
+
+                    
+      </div><!-- end foot_right -->
+  </div><!-- end info -->
+</div>
+
+<!-- end footer -->
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,439 @@
+/* CSS Document */
+
+body, td, input, textarea, select {
+    font: 11px/16px Verdana, Arial, Helvetica, sans-serif;
+    color: #000;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    table-layout: fixed;
+}
+a {
+    color: #6EB440;
+    text-decoration: none;
+    outline: none;
+}
+
+a img {
+    outline: none;
+}
+img{
+    border: 0;
+}
+a:hover {
+    text-decoration: none;
+    color: #999;
+}
+#main {
+    display: table;
+    width: 100%;
+}
+
+#web_main {
+    width: 960px;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+#web_main #main #left-main {
+    /*float: left;*/
+    /*width: 60%;*/
+    width: 671px;
+    display: table-cell;
+}
+
+#web_main #main #left-main .left-main.inner #infor {
+    color: #F00;
+    font-size: 12px;
+    margin: 10px 0px 10px 137px;
+    padding-left: 5px;
+    border: 1px solid #F00;
+    background-color: #FDE0E2;
+    line-height: 19px;
+}
+
+#web_main #main #right-sub {
+    /*float: right;*/
+    /*width: 40%;*/
+    display: table-cell;
+    padding-left: 10px;
+}
+
+#web_main #main #right-sub .right-sub.inner {
+    border: 1px solid #CCCCCC;
+    padding: 0 10px;
+
+}
+
+#web_main #main #left-main .left-main.inner {
+    padding-right: 10px;
+    padding-left: 10px;
+    border: 1px solid #CCCCCC;
+}
+
+#web_main #foot {
+    clear: both;
+    text-align: center;
+}
+
+#card_dv {
+	text-align: left;
+}
+
+#foot ul {
+    margin-bottom: 10px;
+    margin-top: 30px;
+}
+
+#foot ul li {
+    display: inline;
+    padding: 0px 10px;
+    border-right: 1px solid #6EB440;
+    color: #6EB440;
+}
+
+.clear-block {
+    clear: both;
+}
+
+#web_main #main #main-inner {
+    margin: 10px;
+}
+
+#web_main #main #main-inner .summary-box {
+    border: 1px solid #000;
+    margin: 5px;
+    padding: 5px;
+}
+
+.rateplan_info_removed {
+    text-decoration: line-through;
+}
+
+.rateplan_info_added {
+    color: #090;
+}
+
+#top{
+    height: 62px;
+}
+
+#loading{
+    margin: 12px auto 0 auto;
+    width: 98px;
+    height: 19px;
+    border: 1px solid #FFCC67;
+    background-color: #FFEFCE;
+    text-align: center;
+    line-height: 19px;
+    margin-top: -60px;
+}
+.loading{
+    margin: 0px auto 0px auto;
+    width: 98px;
+    height: 19px;
+    border: 1px solid #FFCC67;
+    background-color: #FFEFCE;
+    text-align: center;
+}
+.title{
+    border-top: 1px solid #fff;
+    border-left: 1px solid #fff;
+    border-bottom: 1px solid #CCCCCC;
+    margin: 0 -10px 20px -10px;
+}
+.title h3{
+    height: 39px;
+    background: url(../images/bg_title.png) repeat-x;
+    padding-left: 10px;
+    line-height: 39px;
+    font-size: 18px;
+    margin: 0;
+    font-weight: normal;
+}
+.panel-section label{
+    display: inline-block;
+    width: 118px;
+    text-align: right;
+    padding-right: 15px;
+    padding-left: 3px;
+    line-height: 30px;
+}
+
+input[type='text'], input[type='password']{
+    border: 1px solid #CCCCCC;
+    height: 28px;
+    line-height: 28px;
+	margin: 3px 0;
+}
+.price_item input[type='text']{
+	height: 20px;
+	line-height: 20px;
+}
+.panel-section input[type='text'], .panel-section select, .panel-section input[type='password']{
+    width: 267px;
+}
+
+.btn_submit{
+    display: inline-block;
+    height: 33px;
+    line-height: 33px;
+    color: #fff;
+    padding-left: 12px;
+    padding-right: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-left: 137px;
+    margin-bottom: 5px;
+
+    text-align: center;
+    -webkit-border-radius: 2px;
+    -moz-border-radius: 2px;
+    border-radius: 2px;
+    background:#597276;
+}
+.item_button{
+    /*width: 38px;*/
+    height: 20px;
+    line-height: 20px;
+    font-size: 9px;
+    text-align: center;
+    padding-left: 8px;
+    padding-right: 8px;
+    margin-left: 0px;
+    font-weight: normal;
+	position:relative
+}
+
+.btn_submit:hover{
+    color:#fff;
+}
+
+.chosen_plans{
+    list-style: none outside none;
+    padding-left: 0;
+    margin-top: -4px;
+    font-weight: bold;
+    color: #7F7F7F;
+    font-size: 11px;
+}
+.price_item_list{
+    list-style: none outside none;
+    padding-left: 0;
+    font-size: 10px;
+    font-weight: normal;
+    color: #808080;
+}
+
+.plan_1{
+    border-bottom: 1px dashed #E5E5E5;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+}
+
+.plan_2 {
+    border-bottom: 1px solid #E5E5E5;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+}
+.display_field{
+    text-align: right;
+    font-weight: bold;
+}
+.change_products{
+    height: 21px;
+    line-height: 21px;
+    margin-bottom: 20px;
+    font-size: 10px;
+    font-weight: normal;
+}
+.alignRight{
+    text-align: right;
+}
+.border_no_right{
+    border-right: 0 none !important;
+}
+.copyright{
+    color: #B2B2B2;
+}
+.panel-section h4{
+    font-size: 12px;
+    color: #7F7F7F;
+}
+ul{
+    padding: 0;
+}
+.list_dv{
+
+}
+.list_dv > li{
+    padding: 11px 12px;
+    list-style: none outside none;
+    border: 1px solid #E6E6E6;
+    border-left: 2px solid #597276;
+    background-color: #FAFAFA;
+    margin-bottom: 15px;
+}
+.product{
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+.product .c1{
+    display: table-cell;
+    width: 170px;
+    vertical-align: top;
+}
+
+.product .plan_list{
+    display: table-cell;
+    list-style: none outside none;
+    padding: 0;
+
+}
+
+.product_name{
+    font-weight: bold;
+}
+
+.item_button_block{
+    float: right;
+    width: 40px;
+    text-align: right;
+}
+.rateplan_info{
+    float: left;
+    color: #808080;
+}
+.plan_list > li, .chosen_plans > li{
+    margin: 0 0 10px 0;
+    padding-bottom: 10px;
+}
+.border_bottom_dashed{
+    border-bottom: 1px dashed #E5E5E5;
+}
+.chosen_plans > li.last{
+    border-bottom: 1px solid #E5E5E5;
+}
+
+.rateplan_name{
+    font-weight: bold;
+}
+.rateplan_description{
+    display: inline-block;
+    margin-top: 3px;
+}
+.w80{
+    width: 80px !important;
+}
+.floatLeft{
+    float: left;
+}
+.floatRight{
+    float: right;
+}
+.chosen_plans > li.removed  span, .chosen_plans > li.removed h3, .chosen_plans > li.removed ul{
+    text-decoration: line-through;
+}
+.mark, li.added .mark{
+    padding-left: 7px;
+    padding-right: 7px;
+    height: 16px;
+    line-height: 16px;
+    font-size: 9px;
+    font-weight: normal;
+    display: inline-block;
+    margin-bottom: 7px;
+}
+.mark {
+	border: 1px solid #FF6364;
+	background-color: #FFDEDF;
+	color: #FE0000;
+	text-align: center;
+	width: 150px;
+}
+.added .mark {
+    border: 1px solid #A6CC83;
+    background-color: #EBF6E6;
+    color: #6EB53F;
+}
+.innerBlock{
+    padding: 4px 9px;
+    background-color: #FAFAFA;
+    margin-top: -14px;
+    margin-bottom: 12px;
+}
+
+.innerBlock ul{
+    list-style: square;
+    margin-left: 13px;
+    color: #808080;
+}
+.summary-box .innerBlock{
+    border: 1px solid #E6E6E6;
+    margin-top: 10px;
+    padding: 15px 0;
+}
+
+.summary-box .innerBlock ul{
+    list-style: none;
+}
+.product_sku,.product_description{
+    color: #808080;
+}
+.titleBox{
+    border: 1px solid #CCCCCC;
+    margin-bottom: 18px;
+}
+
+.titleBox > h3{
+    height: 39px;
+    background: url(../images/bg_title.png) repeat-x;
+    padding-left: 10px;
+    line-height: 39px;
+    font-size: 18px;
+    margin: 0;
+    border-bottom: 1px solid #CCCCCC;
+    font-weight: normal;
+
+}
+.summary-box{
+    padding: 10px 10px 10px 13px;
+}
+
+.summary-box td{
+    line-height: 20px;
+}
+
+.vaTop{
+    vertical-align: top;
+}
+.chosen_plans input[type='text'],.panel-section input[type='text']{
+    color: #808080;
+}
+#user_email {
+	margin-left: 20px;
+	position: relative;
+	top: -10px;
+}
+
+.success_message{
+    margin: 0px auto 0px auto;
+    font-size: 10px;
+    border: 1px solid #6C6;
+    background-color: #DFD;
+    text-align: center;
+}
+.error_message{
+    margin: 0px auto 0px auto;
+    font-size: 10px;
+    border: 1px solid #C6C;
+    background-color: #FDD;
+    text-align: center;
+}
+#greeting{
+	color:white;
+}

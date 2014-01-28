@@ -1,0 +1,71 @@
+body{ padding:0; margin:0;}
+#header .rays {
+background: url() 50% 0 no-repeat; text-align:center;
+}
+#header .header-holder {
+background: #fff url() 0 0 repeat-x !important;
+}
+
+#menu-main-nav .drop .c, #menu-main-nav li.parent:hover {
+background: #CCDC71 !important;
+}
+.top-block {
+background: #fff !important; text-align:center;
+}
+.top-block .toolbar-left {
+float: right;
+position: relative;
+top: 26px;
+}
+#header .header-area {
+padding: 0px 0 0px;
+margin:0 auto;
+clear:both;
+}
+#menu-main-nav {
+margin-top: 30px !important; position:relative; z-index:999;
+}
+#main .main-area {
+padding: 30px 0 5px;
+}
+#menu-main-nav li {
+padding: 5px 0px 5px 0px; float:left; *padding: 5px 13px 5px 13px;
+}
+#main .main-area {
+    padding: 18px 0 5px;
+}
+.top-block, .top-block a, #header .toolbar-left li, #header .toolbar-right li {
+color: #000000;
+font-size: 11px;
+}
+.top-block .toolbar-left a, .top-block .toolbar-right a {
+    padding-right: 20px;
+}
+.top-block, .top-block a, #header .toolbar-left li, #header .toolbar-right li {
+font-size: 13px;
+}
+#main {
+background: url() 0 0 repeat-x;
+display: table-footer-group;
+position: relative;
+width: 100%;
+}
+#content {
+    width: 720px;
+}
+.ka_button, .ka_button:hover {
+    text-decoration: none !important;
+}
+#menu-main-nav a .navi-description{display:none !important;}
+	#menu-main-nav li strong {height:40px !important;}
+	#menu-main-nav .drop {top: 20px;}
+	#menu-main-nav {margin-top:12px;}
+	*:first-child+html .big-banner #menu-main-nav {margin-bottom:16px;}
+	#menu-main-nav li {background:none !important;padding-right:20px !important;}
+.post_thumb {background-position: -4px -1470px !important;}
+#menu-main-nav li strong, #menu-main-nav .navi-description, #menu-main-nav .sub-menu li a span,#menu-main-nav .sub-menu .sub-menu li a span, #menu-main-nav a:hover span, #menu-main-nav li.current_page_item a span, #menu-main-nav li.current_page_parent a span, #menu-main-nav li.current-page-ancestor a span, #menu-main-nav .drop ul li.current-menu-item a, #menu-main-nav .drop ul li.current-menu-item a span, #menu-main-nav .drop ul .drop ul li.current-menu-item a, #menu-main-nav .drop ul .drop ul li.current-menu-item a span{color:#477A14!important; _float:left;}
+#sub_nav .sub-menu li a span{color:#575656!important;}
+h2{color:#477A14!important;}
+a:hover{color:#477A14!important;}
+#menu-main-nav, #menu-main-nav li a span strong{font-size:12px!important;}
+#footer,#footer_bottom{ text-align:center; clear:both;}

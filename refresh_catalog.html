@@ -1,0 +1,79 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<link href="css/structure.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="js/jquery.js" /></script>
+<script type="application/javascript" >
+	
+	$(document).ready(function(){
+		$("#loading").hide();
+		$("#refresh_button").click(function(){
+			refreshCatalog();
+		});
+	});
+
+	var refreshCatalog = function(){
+		$("#loading").fadeIn('slow');
+		
+		$.getJSON("backend/index.php?type=RefreshCatalog",
+			function(data){
+				if(!data.success) {	addError(data.msg); }
+				else { 
+					$("#loading").fadeOut('slow');
+					showResults(data.msg); 
+				}
+        	}
+		);	
+	}
+	
+	var showResults = function(msg){
+		html = "";
+		html += "<br>";
+		html += "=========<br>";
+		html += "=SUCCESS=<br>";
+		html += "=========<br>";
+		for(var i in msg){
+			var g = msg[i];
+			html+=g.Name+"<br>";
+			for(var j in g.products){
+				var p = g.products[j];
+				html+= "-> "+p.Name+"<br>";
+				for(var k in p.ratePlans){
+					var rp = p.ratePlans[k];
+					html+= "---> "+ rp.Name+"<br>";
+					for(var l in rp.charges){
+						var c = rp.charges[l];
+						html+= "-----> " + c.Name+"<br>";
+					}
+				}
+			}
+		}
+		html += "<br>=======<br>";
+		$("#result_panel").html(html);
+	}
+
+	var addError = function(emsg){
+		$("#infor").append(emsg);
+		$("#infor").show();
+	};
+	
+</script>
+<body>
+<div id="web_main">
+  <div id="top">
+    <h1 id="logo"><a href="index.html"><img src="images/logo_zuora.png" alt="Zuora"></a></h1>
+    <div id="loading"> loading... </div>
+  </div>
+  <div id="main" class="edit_dv">
+    <div id="left-main">
+      <div class="left-main inner">
+        <div class="title">
+          <h3><a href="javascript:" id='refresh_button' class="btn_submit item_button floatLeft" >Refresh Catalog</a></h3>
+           <div id='result_panel'/>
+        </div>
+      </div>
+    </div>
+  </div> 
+  <div class="clear-block"></div>
+</div>
+</body>
+</html>
